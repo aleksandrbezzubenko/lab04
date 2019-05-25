@@ -1,36 +1,35 @@
-cmake_minimum_required(VERSION 3.0)
-
+cmake_minimum_required(VERSION 3.4)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-option(BUILD_EXAMPLES "Build examples" OFF)
+project(formatter_inc)
 
-project(print)
+add_library(formatter STATIC formatter_lib/formatter.cpp formatter_lib/formatter.h)
 
-add_library(print STATIC ${CMAKE_CURRENT_SOURCE_DIR}/sources/print.cpp)
+add_library(formatter_ex STATIC formatter_ex_lib/formatter_ex.cpp formatter_ex_lib/formatter_ex.h)
+target_link_libraries(formatter_ex formatter)
 
-target_include_directories(print PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>
-)
+add_library(solver_lib STATIC solver_lib/solver.cpp solver_lib/solver.h)
 
-if(BUILD_EXAMPLES)
-  file(GLOB EXAMPLE_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/examples/*.cpp")
-  foreach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
-    get_filename_component(EXAMPLE_NAME ${EXAMPLE_SOURCE} NAME_WE)
-    add_executable(${EXAMPLE_NAME} ${EXAMPLE_SOURCE})
-    target_link_libraries(${EXAMPLE_NAME} print)
-    install(TARGETS ${EXAMPLE_NAME}
-      RUNTIME DESTINATION bin
-    )
-  endforeach(EXAMPLE_SOURCE ${EXAMPLE_SOURCES})
-endif()
+add_executable(solver solver_application/equation.cpp)
+target_link_libraries(solver formatter_ex)
+target_link_libraries(solver solver_lib)
 
-install(TARGETS print
-    EXPORT print-config
+add_executable(hello_world hello_world_application/hello_world.cpp)
+target_link_libraries(hello_world formatter_ex)
+
+include_directories(session PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter_lib)
+include_directories(session PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib)
+include_directories(session PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib)
+
+install(TARGETS solver
+    EXPORT solver-config
     ARCHIVE DESTINATION lib
     LIBRARY DESTINATION lib
+    RUNTIME DESTINATION lib
 )
 
-install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/include/ DESTINATION include)
-install(EXPORT print-config DESTINATION cmake)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/formatter_lib/ DESTINATION formatter_lib)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/formatter_ex_lib/ DESTINATION formatter_ex_lib)
+install(DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/solver_lib/ DESTINATION solver_lib)
+install(EXPORT solver-config DESTINATION cmake)
